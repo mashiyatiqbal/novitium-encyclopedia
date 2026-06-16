@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Novitium Encyclopedia — Technical Library</title>
+  <meta name="description" content="A central technical library of white papers, research reports, technical briefs, and case studies for commercial solar, storage, and clean energy." />
+  <link rel="icon" href="assets/novitium-mark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,600;1,9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============ Header ============ -->
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="#top">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="assets/novitium-mark.png" width="26" height="26" alt="" />
+        </span>
+        <span class="brand-text">
+          <strong>Novitium Encyclopedia</strong>
+          <span>Technical Library</span>
+        </span>
+      </a>
+      <nav class="nav">
+        <a href="#library">Library</a>
+        <a href="#" data-cat="Glossary" id="nav-glossary">Glossary</a>
+        <a href="#" data-cat="Policy &amp; Incentives">Incentives</a>
+        <a href="#" id="nav-ask">Ask VOLT</a>
+      </nav>
+      <span class="domain-pill">energyglossary.com</span>
+    </div>
+  </header>
+
+  <!-- ============ Title header ============ -->
+  <section class="hero" id="top">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <span class="eyebrow">The Energy Knowledge Library</span>
+      <h1>The <span class="accent">Novitium</span> Encyclopedia</h1>
+      <p class="subtitle">White Papers&nbsp;&nbsp;·&nbsp;&nbsp;Research Reports&nbsp;&nbsp;·&nbsp;&nbsp;Technical Briefs&nbsp;&nbsp;·&nbsp;&nbsp;Case Studies</p>
+    </div>
+  </section>
+
+  <!-- ============ Search ============ -->
+  <section class="search-band">
+    <div class="wrap">
+      <p class="lede">Browse our open-access collection of research and technical documents on solar development, energy storage, grid integration, and renewable energy policy.</p>
+
+      <div class="search-bar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search" type="search" placeholder="Search documents, terms, or topics — e.g. “ITC”, “net metering”, “PPA template”" autocomplete="off" />
+        <button id="search-btn">Search</button>
+      </div>
+
+      <div class="quick-tags">
+        <span>Popular:</span>
+        <button data-q="ITC">Tax Credit (ITC)</button>
+        <button data-q="net metering">Net Metering</button>
+        <button data-q="PPA">PPA Template</button>
+        <button data-q="battery storage">Battery Storage</button>
+        <button data-q="interconnection">Interconnection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Featured topics ============ -->
+  <section class="topics-band">
+    <div class="wrap">
+      <h2>Featured Document Topics</h2>
+      <div class="topics-list" id="topics-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ Library ============ -->
+  <main class="wrap library" id="library">
+    <div class="section-head">
+      <h2>Filter &amp; Search Documents</h2>
+      <p>Browse the full collection, or narrow it by topic, type, level, and search.</p>
+    </div>
+
+    <!-- Toolbar: dropdown filters + sort -->
+    <div class="toolbar">
+      <div class="filter-row">
+        <span class="filter-label">Filter by:</span>
+        <div class="dd" id="dd-category">
+          <button class="dd-btn" type="button" aria-expanded="false">
+            Topic <span class="dd-count" id="count-category" hidden>0</span>
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-panel"><div id="filter-category"></div></div>
+        </div>
+        <div class="dd" id="dd-type">
+          <button class="dd-btn" type="button" aria-expanded="false">
+            Document Type <span class="dd-count" id="count-type" hidden>0</span>
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-panel"><div id="filter-type"></div></div>
+        </div>
+        <div class="dd" id="dd-level">
+          <button class="dd-btn" type="button" aria-expanded="false">
+            Level <span class="dd-count" id="count-level" hidden>0</span>
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="dd-panel"><div id="filter-level"></div></div>
+        </div>
+        <button class="clear-btn" id="clear-filters" hidden>Clear filters</button>
+      </div>
+      <div class="toolbar-right">
+        <span class="count-label"><b id="result-count">0</b> documents <span id="query-label"></span></span>
+        <div class="sort">
+          <label for="sort">Sort</label>
+          <select id="sort">
+            <option value="newest">Newest</option>
+            <option value="title">Title (A–Z)</option>
+            <option value="category">Topic</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active filter chips -->
+    <div class="active-filters" id="active-filters"></div>
+
+    <!-- Results -->
+    <div class="grid" id="results"></div>
+  </main>
+
+  <!-- ============ Stay updated ============ -->
+  <section class="cta-band">
+    <div class="wrap">
+      <h2>Stay Updated</h2>
+      <p>Get notified when new documents are added to the library — the latest research in solar PV, energy storage, grid integration, and renewable energy policy.</p>
+      <form class="cta-form" id="cta-form">
+        <input type="email" id="cta-email" placeholder="you@company.com" autocomplete="email" />
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ Footer ============ -->
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <div class="footer-brand">
+        <strong>Novitium Encyclopedia</strong>
+        <p>A central technical library for commercial clean energy — open-access research, technical briefs, and a plain-English glossary, with VOLT, our solar expert, on hand to guide you. ☀️</p>
+      </div>
+      <div class="footer-meta">
+        <div class="footer-links">
+          <a href="#">Terms of Service</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">energyglossary.com</a>
+        </div>
+        <span class="copy">Novitium Energy · Technical Library · © 2026 All Rights Reserved</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============ Chatbot ============ -->
+  <button class="chat-fab" id="chat-fab" aria-label="Open chat with VOLT">
+    <img src="assets/volt-photo.png" alt="VOLT avatar" />
+    <span class="ping"></span>
+    Ask VOLT
+  </button>
+
+  <section class="chat-panel" id="chat-panel" aria-label="Chat with VOLT">
+    <div class="chat-head">
+      <img src="assets/volt-photo.png" alt="VOLT" />
+      <div class="who">
+        <strong>VOLT</strong>
+        <span>Commercial Solar Expert · <span class="status">online</span></span>
+      </div>
+      <button class="close" id="chat-close" aria-label="Close chat">×</button>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chips" id="chat-chips"></div>
+    <form class="chat-input" id="chat-form">
+      <input id="chat-text" type="text" placeholder="Ask a question…" autocomplete="off" />
+      <button type="submit" aria-label="Send">➤</button>
+    </form>
+  </section>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

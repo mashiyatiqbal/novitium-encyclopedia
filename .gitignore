@@ -1,0 +1,13 @@
+# Dependencies / build
+node_modules/
+dist/
+
+# Secrets — never commit real keys
+.env
+.env.local
+server/.env
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.claude/
