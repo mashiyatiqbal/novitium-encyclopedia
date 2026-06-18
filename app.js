@@ -3,7 +3,7 @@
    - Search bar + multi-facet filtering + sorting
    - VOLT: a rule-based assistant that answers from the glossary + document set
    ========================================================================== */
-(function () {h
+(function () {
   "use strict";
 
   /* ---------------- State ---------------- */
