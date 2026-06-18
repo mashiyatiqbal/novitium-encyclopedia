@@ -271,7 +271,7 @@
     if (!greeted) {
       greeted = true;
       botSay("Hi, I'm <strong>VOLT</strong> — your guide to the Novitium Encyclopedia. ☀️ I can explain energy terms, point you to documents, or help you use the site. What can I help with?");
-      setChips(["What is the ITC?", "Find a PPA template", "How do I search?", "Explain net metering"]);
+      setChips(["What is the ITC?", "How do I search?", "Explain net metering"]);
     }
   }
   function closeChat() { panel.classList.remove("open"); fab.style.display = "flex"; }
@@ -482,7 +482,7 @@
       "I'm not certain I have a document on that, but I can help with clean-energy terms, financing, incentives, storage, and using this site. " +
       "Try rephrasing, or pick a topic below."
     );
-    setChips(["What is the ITC?", "Explain net metering", "Find a PPA template", "How do I search?"]);
+    setChips(["What is the ITC?", "Explain net metering", "How do I search?"]);
   }
 
   // delegate clicks on bot-generated term/doc links
