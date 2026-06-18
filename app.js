@@ -55,10 +55,8 @@
   }
   buildFilter("filter-category", CATEGORIES, state.cats, "category");
   buildFilter("filter-type", DOC_TYPES, state.types, "type");
-
-// Build author filter from unique authors in documents
-const AUTHORS = [...new Set(DOCUMENTS.map(d => d.author))].sort();
-buildFilter("filter-author", AUTHORS, state.authors, "author");
+  const AUTHORS = [...new Set(DOCUMENTS.map(d => d.author))].sort();
+  buildFilter("filter-author", AUTHORS, state.authors, "author");
 
   /* Update the count badge on a dropdown button + clear-button visibility */
   function updateFilterCount(field) {
