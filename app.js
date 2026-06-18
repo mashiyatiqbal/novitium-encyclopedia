@@ -3,7 +3,7 @@
    - Search bar + multi-facet filtering + sorting
    - VOLT: a rule-based assistant that answers from the glossary + document set
    ========================================================================== */
-(function () {
+(function () {h
   "use strict";
 
   /* ---------------- State ---------------- */
@@ -252,7 +252,7 @@
   }
 
   // Nav shortcuts
-  $("#nav-glossary").addEventListener("click", (e) => { e.preventDefault(); searchInput.value = ""; doSearch(""); openChat(); botSay(glossaryOverview()); });
+  if ($("#nav-glossary")) $("#nav-glossary").addEventListener("click", (e) => { e.preventDefault(); searchInput.value = ""; doSearch(""); openChat(); botSay(glossaryOverview()); });
 
   render();
 
@@ -277,7 +277,7 @@
   function closeChat() { panel.classList.remove("open"); fab.style.display = "flex"; }
   fab.addEventListener("click", openChat);
   $("#chat-close").addEventListener("click", closeChat);
-  $("#nav-ask").addEventListener("click", (e) => { e.preventDefault(); openChat(); });
+  if ($("#nav-ask")) $("#nav-ask").addEventListener("click", (e) => { e.preventDefault(); openChat(); });
 
   function addMsg(who, html) {
     const m = el("div", "msg " + who);
