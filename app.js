@@ -11,7 +11,6 @@
     query: "",
     cats: new Set(),
     types: new Set(),
-    levels: new Set(),
     authors: new Set(),
     sort: "newest",
   };
@@ -34,8 +33,7 @@
   const FILTERS = {
     category: { set: () => state.cats, label: "Category" },
     type: { set: () => state.types, label: "Type" },
-    level: { set: () => state.levels, label: "Level" },
-  author: { set: () => state.authors, label: "Author" },
+    author: { set: () => state.authors, label: "Author" },
   };
 
   function buildFilter(containerId, values, set, field) {
@@ -57,7 +55,6 @@
   }
   buildFilter("filter-category", CATEGORIES, state.cats, "category");
   buildFilter("filter-type", DOC_TYPES, state.types, "type");
-  buildFilter("filter-level", LEVELS, state.levels, "level");
 
 // Build author filter from unique authors in documents
 const AUTHORS = [...new Set(DOCUMENTS.map(d => d.author))].sort();
@@ -68,7 +65,7 @@ buildFilter("filter-author", AUTHORS, state.authors, "author");
     const n = FILTERS[field].set().size;
     const badge = $("#count-" + field);
     if (badge) { badge.textContent = n; badge.hidden = n === 0; }
-    const anyActive = state.cats.size || state.types.size || state.levels.size;
+
     $("#clear-filters").hidden = !anyActive;
   }
 
@@ -147,7 +144,6 @@ buildFilter("filter-author", AUTHORS, state.authors, "author");
       matchesQuery(d, state.query) &&
       (state.cats.size === 0 || state.cats.has(d.category)) &&
       (state.types.size === 0 || state.types.has(d.type)) &&
-      (state.levels.size === 0 || state.levels.has(d.level)) &&
       (state.authors.size === 0 || state.authors.has(d.author))
     );
     if (state.sort === "newest") list.sort((a, b) => b.date.localeCompare(a.date));
@@ -227,9 +223,9 @@ buildFilter("filter-author", AUTHORS, state.authors, "author");
   $("#sort").addEventListener("change", (e) => { state.sort = e.target.value; render(); });
 
   $("#clear-filters").addEventListener("click", () => {
-    state.cats.clear(); state.types.clear(); state.levels.clear(); state.authors.clear();
+    state.cats.clear(); state.types.clear(); state.authors.clear();
     document.querySelectorAll(".dd-panel input[type=checkbox]").forEach((c) => (c.checked = false));
-    ["category", "type", "level", "author"].forEach(updateFilterCount);
+    ["category", "type", "author"].forEach(updateFilterCount);
     render();
   });
 
