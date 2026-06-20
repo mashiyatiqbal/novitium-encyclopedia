@@ -432,29 +432,93 @@
 
     // greetings
     if (/^(hi|hey|hello|yo|howdy)\b/.test(q)) {
-      botSay("Hey there! 👋 Ask me about an energy term, or tell me what you're trying to find.");
-      return;
-    }
-    // thanks
-    if (/(thank|thanks|cheers|appreciate)/.test(q)) {
-      botSay("Anytime! ☀️ Anything else I can help you find?");
-      return;
-    }
-    // how to use site / search / filter
-    if (/(how (do|to)|use the site|search|filter|navigate)/.test(q)) {
       botSay(
-        "Easy! Three ways to get around:<br>" +
-        "• <strong>Search bar</strong> at the top — type a term, title, or topic.<br>" +
-        "• <strong>Filters</strong> on the left — narrow by category, document type, or level.<br>" +
-        "• <strong>Popular tags</strong> under the search bar for one-click shortcuts.<br>" +
+        "Hey there! 👋 Ask me about an energy term, or tell me what you're trying to find."
+      );
+      setChips(["Show me financing docs", "What is a PPA?", "Find storage resources"]);
+      return;
+    }
+
+    // how to search / site help
+    if (/(how.*(search|find|use|filter|sort|navigate)|search bar|filter|sort by)/.test(q)) {
+      botSay(
+        "To find resources:<br>" +
+        "- Use the <strong>search bar</strong> at the top to search by keyword.<br>" +
+        "- Use the <strong>Category, Type, and Level filters</strong> on the toolbar to narrow results.<br>" +
+        "- Click any popular-topic shortcut to instantly filter.<br><br>" +
         "Want me to run a search for you? Just tell me the topic."
       );
       setChips(["Show me financing docs", "What is a PPA?", "Find storage resources"]);
       return;
     }
+
     // glossary listing
     if (/(glossary|terms|definitions|vocabulary)/.test(q)) {
       botSay(glossaryOverview());
+      return;
+    }
+
+    // ---- cross-topic / conceptual connection questions ----
+    const TOPIC_EXPLANATIONS = {
+      "storage|battery|batteries": {
+        label: "energy storage",
+        explain: "Energy storage (usually batteries) lets you capture solar power when it's generated and use it later — evenings, cloudy days, or peak-rate hours. For commercial sites, pairing storage with solar can dramatically cut demand charges and improve resilience."
+      },
+      "itc|investment tax credit|tax credit|incentive|incentives|policy|policies": {
+        label: "solar incentives / ITC",
+        explain: "The Investment Tax Credit (ITC) lets businesses deduct a significant percentage of solar installation costs from federal taxes. Recent legislation expanded it to cover standalone storage as well, making solar+storage projects far more financially attractive."
+      },
+      "ppa|power purchase agreement|financing|finance|fund|loan|lease": {
+        label: "financing / PPAs",
+        explain: "A Power Purchase Agreement (PPA) lets a business go solar with little or no upfront cost — a developer owns and installs the system, and you buy the electricity it produces at a fixed rate. Other options include loans, leases, and PACE financing."
+      },
+      "grid|interconnection|utility|net metering|net energy metering|nem": {
+        label: "grid & interconnection",
+        explain: "Connecting a solar system to the utility grid involves an interconnection process, inspections, and agreements that vary by utility and state. Net metering lets you send excess solar generation back to the grid for bill credits."
+      },
+      "wind|turbine": {
+        label: "wind energy",
+        explain: "Commercial wind projects capture kinetic energy from wind using turbines. Wind and solar are often complementary — wind tends to blow more at night or in seasons when solar output is lower, making hybrid projects a reliable generation mix."
+      },
+      "installation|install|o&m|maintenance|operations|roof|ground mount": {
+        label: "installation & O&M",
+        explain: "Commercial solar installation involves site assessment, structural engineering, permitting, and utility coordination. After installation, ongoing O&M (operations and maintenance) — including cleaning, monitoring, and inverter checks — keeps the system performing at peak efficiency."
+      }
+    };
+
+    // Detect if this is a conceptual / relationship question
+    const isConceptual = /(connection|relationship|relate|difference|compare|vs\.?|versus|how does.*affect|why|explain|what is the link|interact|work together|combined|hybrid)/.test(q);
+
+    // Find which topics are mentioned in the question
+    const matchedTopics = [];
+    for (const [pattern, info] of Object.entries(TOPIC_EXPLANATIONS)) {
+      if (new RegExp(pattern).test(q)) matchedTopics.push(info);
+    }
+
+    if (isConceptual && matchedTopics.length >= 2) {
+      // Multi-topic conceptual question — give a synthesized explanation
+      const topicLabels = matchedTopics.map(t => t.label).join(" and ");
+      const explanations = matchedTopics.map(t => "- <strong>" + t.label.charAt(0).toUpperCase() + t.label.slice(1) + ":</strong> " + t.explain).join("<br>");
+      const docs = findDocs(raw);
+      const docLinks = docs.length ? "<br><br>Relevant library resources:<br>" + docs.map(docLink).join("<br>") : "";
+      botSay(
+        "Great question — here's how <strong>" + topicLabels + "</strong> connect:<br><br>" +
+        explanations +
+        "<br><br>The two are increasingly inseparable in commercial projects: incentive structures now reward combined solar+storage deployments, and smart financing structures can wrap both into a single agreement." +
+        docLinks
+      );
+      return;
+    }
+
+    if (isConceptual && matchedTopics.length === 1) {
+      // Single-topic conceptual question
+      const topic = matchedTopics[0];
+      const docs = findDocs(raw);
+      const docLinks = docs.length ? "<br><br>Relevant resources:<br>" + docs.map(docLink).join("<br>") : "";
+      botSay(
+        "<strong>" + topic.label.charAt(0).toUpperCase() + topic.label.slice(1) + ":</strong> " +
+        topic.explain + docLinks
+      );
       return;
     }
 
@@ -462,7 +526,7 @@
     const g = findGlossary(q);
     if (g) {
       const docs = findDocs(g.term + " " + g.full);
-      let extra = docs.length ? "<br><br>📄 Related resources:<br>" + docs.map(docLink).join("<br>") : "";
+      let extra = docs.length ? "<br><br>Related resources:<br>" + docs.map(docLink).join("<br>") : "";
       botSay(`<strong>${esc(g.full)} (${esc(g.term)})</strong><br>${esc(g.def)}${extra}`);
       return;
     }
@@ -480,7 +544,7 @@
 
     // fallback
     botSay(
-      "I'm not certain I have a document on that, but I can help with clean-energy terms, financing, incentives, storage, and using this site. " +
+      "I'm not certain I have a document on that, but I can help with clean-energy terms, financing, incentives, and installation topics.<br>" +
       "Try rephrasing, or pick a topic below."
     );
     setChips(["What is the ITC?", "Explain net metering", "How do I search?"]);
