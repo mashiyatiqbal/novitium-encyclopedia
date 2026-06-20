@@ -72,7 +72,7 @@ app.post("/api/chat", async (req, res) => {
     const stream = client.messages.stream(
       {
         model: CHAT_MODEL,
-        max_tokens: 1024,
+        max_tokens: 2048,
         // Snappy FAQ replies — thinking off keeps latency/cost low.
         thinking: { type: "disabled" },
         system: [
