@@ -466,7 +466,7 @@
       },
       "itc|investment tax credit|tax credit|incentive|incentives|policy|policies|macrs|modified accelerated cost|depreciation|bonus depreciation": {
         label: "ITC / MACRS / incentives",
-        explain: "The Investment Tax Credit (ITC) lets businesses deduct a significant percentage of solar installation costs from federal taxes. Recent legislation expanded it to cover standalone storage as well, making solar+storage projects far more financially attractive."
+        explain: "The Investment Tax Credit (ITC) lets businesses deduct a significant percentage of solar installation costs from federal taxes. Recent legislation expanded it to cover standalone storage as well, making solar+storage projects far more financially attractive. MACRS (Modified Accelerated Cost Recovery System) is the other key tool: it lets owners depreciate solar equipment over 5 years, with bonus depreciation allowing 60-80%+ in year one. Together, ITC + MACRS dramatically front-load project economics, improving IRR by 3-5 percentage points on a typical commercial solar deal and making tax equity structures like partnership flip and sale-leaseback financially viable."
       },
       "ppa|power purchase agreement|financing|finance|fund|loan|lease": {
         label: "financing / PPAs",
