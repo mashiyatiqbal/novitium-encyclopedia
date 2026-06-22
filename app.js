@@ -271,7 +271,7 @@
     fab.style.display = "none";
     if (!greeted) {
       greeted = true;
-      botSay("Hi, I'm <strong>VOLT</strong> — your guide to the Novitium Encyclopedia. ☀️ I can explain energy terms, point you to documents, or help you use the site. What can I help with?");
+      botSay("Hi, I'm <strong>VOLT</strong> — your guide to the Novitium Encyclopedia. ☀️ I can answer questions on any topic, explain clean energy concepts, help you find documents, or just have a conversation. What can I help with?");
       setChips(["What is the ITC?", "How do I search?", "Explain net metering"]);
     }
   }
@@ -544,8 +544,8 @@
 
     // fallback
     botSay(
-      "I'm not certain I have a document on that, but I can help with clean-energy terms, financing, incentives, and installation topics.<br>" +
-      "Try rephrasing, or pick a topic below."
+      "I'm happy to help with that!" +
+      "What's on your mind? I'm happy to help!"
     );
     setChips(["What is the ITC?", "Explain net metering", "How do I search?"]);
   }
