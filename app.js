@@ -464,8 +464,8 @@
         label: "energy storage",
         explain: "Energy storage (usually batteries) lets you capture solar power when it's generated and use it later — evenings, cloudy days, or peak-rate hours. For commercial sites, pairing storage with solar can dramatically cut demand charges and improve resilience."
       },
-      "itc|investment tax credit|tax credit|incentive|incentives|policy|policies": {
-        label: "solar incentives / ITC",
+      "itc|investment tax credit|tax credit|incentive|incentives|policy|policies|macrs|modified accelerated cost|depreciation|bonus depreciation": {
+        label: "ITC / MACRS / incentives",
         explain: "The Investment Tax Credit (ITC) lets businesses deduct a significant percentage of solar installation costs from federal taxes. Recent legislation expanded it to cover standalone storage as well, making solar+storage projects far more financially attractive."
       },
       "ppa|power purchase agreement|financing|finance|fund|loan|lease": {
@@ -504,7 +504,7 @@
       botSay(
         "Great question — here's how <strong>" + topicLabels + "</strong> connect:<br><br>" +
         explanations +
-        "<br><br>The two are increasingly inseparable in commercial projects: incentive structures now reward combined solar+storage deployments, and smart financing structures can wrap both into a single agreement." +
+        "<br><br>In commercial energy projects, these two domains interact closely. Incentive stacking, financing structures, and operational planning often require understanding both simultaneously. The library resources below can help you dig deeper into each area." +
         docLinks
       );
       return;
