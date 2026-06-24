@@ -75,12 +75,15 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "No valid messages provided." });
   }
 
-  // Server-Sent Events — include CORS header in writeHead since writeHead overrides res.header()
+  // Server-Sent Events
+  // X-Accel-Buffering: no disables nginx/proxy buffering so SSE works on Render/etc.
+  // Include CORS header here since res.writeHead overrides headers set by middleware.
   const origin = req.headers.origin || "";
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
     Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
     ...(ALLOWED_ORIGINS.includes(origin) && {
       "Access-Control-Allow-Origin": origin,
     }),
@@ -97,8 +100,6 @@ app.post("/api/chat", async (req, res) => {
       {
         model: CHAT_MODEL,
         max_tokens: 2048,
-        // Snappy FAQ replies — thinking off keeps latency/cost low.
-        thinking: { type: "disabled" },
         system: [
           { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
         ],
