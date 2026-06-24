@@ -9,7 +9,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { buildSystemPrompt } = require("./knowledge");
 
 const PORT = process.env.PORT || 3000;
-const CHAT_MODEL = process.env.CHAT_MODEL || "claude-opus-4-8";
+const CHAT_MODEL = process.env.CHAT_MODEL || "claude-3-5-sonnet-20241022";
 const MAX_TURNS = 20; // cap conversation history sent to the API
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -72,10 +72,14 @@ app.post("/api/chat", async (req, res) => {
   }
 
   // Server-Sent Events
+  const origin = req.headers.origin || '';
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
     Connection: "keep-alive",
+    ...(ALLOWED_ORIGINS.includes(origin) && {
+      "Access-Control-Allow-Origin": origin,
+    }),
   });
   const send = (event, data) =>
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -85,12 +89,11 @@ app.post("/api/chat", async (req, res) => {
   req.on("close", () => controller.abort());
 
   try {
+    console.log("Calling Claude API with model:", CHAT_MODEL, "messages:", messages.length);
     const stream = client.messages.stream(
       {
         model: CHAT_MODEL,
         max_tokens: 2048,
-        // Snappy FAQ replies — thinking off keeps latency/cost low.
-        thinking: { type: "disabled" },
         system: [
           { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
         ],
