@@ -75,9 +75,9 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "No valid messages provided." });
   }
 
-  console.log("Calling Claude API with model:", CHAT_MODEL, "messages:", messages.length);
+  console.log("POST /api/chat model:", CHAT_MODEL, "msgs:", messages.length);
 
-  // Server-Sent Events — res.flushHeaders() immediately pushes headers past Render proxy
+  // Server-Sent Events
   const origin = req.headers.origin || "";
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -92,46 +92,41 @@ app.post("/api/chat", async (req, res) => {
   const send = (event, data) =>
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
-  // Abort the upstream request if the client disconnects
-  const controller = new AbortController();
-  req.on("close", () => controller.abort());
+  // Abort if client disconnects
+  let aborted = false;
+  req.on("close", () => { aborted = true; });
 
   try {
-    const stream = client.messages.stream(
-      {
-        model: CHAT_MODEL,
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages,
-      },
-      { signal: controller.signal }
-    );
-
-    console.log("Stream created, waiting for events...");
+    console.log("Creating message stream...");
+    const stream = await client.messages.create({
+      model: CHAT_MODEL,
+      max_tokens: 2048,
+      system: SYSTEM_PROMPT,
+      messages,
+      stream: true,
+    });
+    console.log("Stream created, iterating...");
 
     for await (const event of stream) {
+      if (aborted) break;
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
         send("delta", { text: event.delta.text });
+      } else if (event.type === "message_stop") {
+        console.log("Message complete.");
+        send("done", { stop_reason: "end_turn" });
+        break;
+      } else if (event.type === "message_delta") {
+        // stop_reason available here
       }
     }
-
-    console.log("Stream complete.");
-    const final = await stream.finalMessage();
-    send("done", {
-      stop_reason: final.stop_reason,
-      usage: final.usage,
-    });
     res.end();
   } catch (err) {
-    if (controller.signal.aborted) return; // client went away
+    if (aborted) return;
     console.error("Chat error:", err && err.message ? err.message : err);
-    // If nothing was streamed yet we can still surface a clean error event.
     try {
       send("error", { error: "VOLT had trouble responding. Please try again." });
       res.end();
-    } catch (_) {
-      /* response already closed */
-    }
+    } catch (_) {}
   }
 });
 
