@@ -75,9 +75,9 @@ app.post("/api/chat", async (req, res) => {
     return res.status(400).json({ error: "No valid messages provided." });
   }
 
-  // Server-Sent Events
-  // res.flushHeaders() immediately sends headers to the client/proxy,
-  // which is required for SSE to work through Render's proxy.
+  console.log("Calling Claude API with model:", CHAT_MODEL, "messages:", messages.length);
+
+  // Server-Sent Events — res.flushHeaders() immediately pushes headers past Render proxy
   const origin = req.headers.origin || "";
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -101,13 +101,13 @@ app.post("/api/chat", async (req, res) => {
       {
         model: CHAT_MODEL,
         max_tokens: 2048,
-        system: [
-          { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
-        ],
+        system: SYSTEM_PROMPT,
         messages,
       },
       { signal: controller.signal }
     );
+
+    console.log("Stream created, waiting for events...");
 
     for await (const event of stream) {
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
@@ -115,6 +115,7 @@ app.post("/api/chat", async (req, res) => {
       }
     }
 
+    console.log("Stream complete.");
     const final = await stream.finalMessage();
     send("done", {
       stop_reason: final.stop_reason,
