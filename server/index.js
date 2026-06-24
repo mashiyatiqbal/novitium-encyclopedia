@@ -25,6 +25,22 @@ const SYSTEM_PROMPT = buildSystemPrompt();
 const app = express();
 app.use(express.json({ limit: "256kb" }));
 
+// Allow the GitHub Pages front-end to call this API
+const ALLOWED_ORIGINS = [
+  "https://mashiyatiqbal.github.io",
+  "http://localhost:3000",
+];
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+    res.header("Access-Control-Allow-Headers", "Content-Type");
+    res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  }
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
 // Serve the static site (one directory up from /server)
 const SITE_DIR = path.join(__dirname, "..");
 app.use(express.static(SITE_DIR));
