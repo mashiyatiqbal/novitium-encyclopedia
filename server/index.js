@@ -19,10 +19,10 @@ if (!process.env.ANTHROPIC_API_KEY) {
   );
 }
 
-const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
 const SYSTEM_PROMPT = buildSystemPrompt();
-
 const app = express();
+const client = new Anthropic();
+
 app.use(express.json({ limit: "256kb" }));
 
 // Allow the GitHub Pages front-end to call this API
@@ -31,13 +31,15 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
 ];
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
+  const origin = req.headers.origin || "";
   if (ALLOWED_ORIGINS.includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Access-Control-Allow-Headers", "Content-Type");
     res.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   }
-  if (req.method === "OPTIONS") return res.sendStatus(204);
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
   next();
 });
 
@@ -49,7 +51,9 @@ app.use(express.static(SITE_DIR));
 function normalizeMessages(raw) {
   if (!Array.isArray(raw)) return [];
   const msgs = raw
-    .filter((m) => m && (m.role === "user" || m.role === "assistant"))
+    .filter(
+      (m) => m && (m.role === "user" || m.role === "assistant") && m.content
+    )
     .map((m) => ({
       role: m.role,
       content: String(m.content ?? "").slice(0, 4000),
@@ -66,13 +70,13 @@ app.post("/api/chat", async (req, res) => {
     return res.status(503).json({ error: "Chat is not configured (missing API key)." });
   }
 
-  const messages = normalizeMessages(req.body && req.body.messages);
+  const messages = normalizeMessages(req.body.messages);
   if (!messages.length) {
     return res.status(400).json({ error: "No valid messages provided." });
   }
 
-  // Server-Sent Events
-  const origin = req.headers.origin || '';
+  // Server-Sent Events — include CORS header in writeHead since writeHead overrides res.header()
+  const origin = req.headers.origin || "";
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache, no-transform",
@@ -89,11 +93,12 @@ app.post("/api/chat", async (req, res) => {
   req.on("close", () => controller.abort());
 
   try {
-    console.log("Calling Claude API with model:", CHAT_MODEL, "messages:", messages.length);
     const stream = client.messages.stream(
       {
         model: CHAT_MODEL,
         max_tokens: 2048,
+        // Snappy FAQ replies — thinking off keeps latency/cost low.
+        thinking: { type: "disabled" },
         system: [
           { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
         ],
@@ -102,7 +107,11 @@ app.post("/api/chat", async (req, res) => {
       { signal: controller.signal }
     );
 
-    stream.on("text", (delta) => send("delta", { text: delta }));
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        send("delta", { text: event.delta.text });
+      }
+    }
 
     const final = await stream.finalMessage();
     send("done", {
