@@ -76,8 +76,8 @@ app.post("/api/chat", async (req, res) => {
   }
 
   // Server-Sent Events
-  // X-Accel-Buffering: no disables nginx/proxy buffering so SSE works on Render/etc.
-  // Include CORS header here since res.writeHead overrides headers set by middleware.
+  // res.flushHeaders() immediately sends headers to the client/proxy,
+  // which is required for SSE to work through Render's proxy.
   const origin = req.headers.origin || "";
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -88,6 +88,7 @@ app.post("/api/chat", async (req, res) => {
       "Access-Control-Allow-Origin": origin,
     }),
   });
+  res.flushHeaders();
   const send = (event, data) =>
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
