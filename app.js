@@ -5,6 +5,14 @@
    ========================================================================== */
 (function () {
   "use strict";
+  /* VOLT backend URL — reads from <meta name="volt-api"> in index.html.
+     Absent on same-origin (localhost/Render) → uses relative path.
+     Set to your Render URL on GitHub Pages. */
+  const API_BASE = (() => {
+    const meta = document.querySelector('meta[name="volt-api"]');
+    return meta ? meta.content.replace(/\/$/, '') : '';
+  })();
+
 
   /* ---------------- State ---------------- */
   const state = {
@@ -351,7 +359,7 @@
   /* Stream a reply from the VOLT backend (SSE). Resolves with the full text,
      or throws if the backend is unreachable / not configured. */
   async function streamChat(messages, onDelta) {
-    const resp = await fetch("/api/chat", {
+    const resp = await fetch(API_BASE + "/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages }),
