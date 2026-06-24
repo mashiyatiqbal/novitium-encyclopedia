@@ -9,7 +9,7 @@ const Anthropic = require("@anthropic-ai/sdk");
 const { buildSystemPrompt } = require("./knowledge");
 
 const PORT = process.env.PORT || 3000;
-const CHAT_MODEL = process.env.CHAT_MODEL || "claude-3-5-sonnet-20241022";
+const CHAT_MODEL = process.env.CHAT_MODEL || "claude-3-5-sonnet-latest";
 const MAX_TURNS = 20; // cap conversation history sent to the API
 
 if (!process.env.ANTHROPIC_API_KEY) {
@@ -47,6 +47,23 @@ app.use((req, res, next) => {
 const SITE_DIR = path.join(__dirname, "..");
 app.use(express.static(SITE_DIR));
 
+// Quick non-streaming test
+app.get("/api/test", async (_req, res) => {
+  try {
+    console.log("Testing Claude API (non-stream)...");
+    const msg = await client.messages.create({
+      model: CHAT_MODEL,
+      max_tokens: 50,
+      messages: [{ role: "user", content: "Say OK" }],
+    });
+    console.log("Test success:", msg.content[0].text);
+    res.json({ ok: true, model: CHAT_MODEL, reply: msg.content[0].text });
+  } catch (err) {
+    console.error("Test error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Sanitize incoming history into valid Anthropic message params ---
 function normalizeMessages(raw) {
   if (!Array.isArray(raw)) return [];
@@ -60,7 +77,6 @@ function normalizeMessages(raw) {
     }))
     .filter((m) => m.content.trim().length > 0)
     .slice(-MAX_TURNS);
-  // The API requires the first message to be from the user.
   while (msgs.length && msgs[0].role !== "user") msgs.shift();
   return msgs;
 }
@@ -92,33 +108,32 @@ app.post("/api/chat", async (req, res) => {
   const send = (event, data) =>
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
-  // Abort if client disconnects
   let aborted = false;
   req.on("close", () => { aborted = true; });
 
   try {
-    console.log("Creating message stream...");
-    const stream = await client.messages.create({
-      model: CHAT_MODEL,
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages,
-      stream: true,
-    });
-    console.log("Stream created, iterating...");
+    console.log("Streaming from Claude...");
+    const stream = client.messages.stream(
+      {
+        model: CHAT_MODEL,
+        max_tokens: 2048,
+        system: [
+          { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+        ],
+        messages,
+      },
+      { signal: new AbortController().signal }
+    );
 
     for await (const event of stream) {
       if (aborted) break;
       if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
         send("delta", { text: event.delta.text });
-      } else if (event.type === "message_stop") {
-        console.log("Message complete.");
-        send("done", { stop_reason: "end_turn" });
-        break;
-      } else if (event.type === "message_delta") {
-        // stop_reason available here
       }
     }
+    console.log("Stream complete.");
+    const final = await stream.finalMessage();
+    send("done", { stop_reason: final.stop_reason, usage: final.usage });
     res.end();
   } catch (err) {
     if (aborted) return;
