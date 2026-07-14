@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up — The Energy Glossary</title>
+  <link rel="icon" href="assets/novitium-mark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://hfonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+
+    <div class="auth-page">
+      <div class="auth-card">
+        <h1>Create Your Account</h1>
+      <p class="auth-sub">Sign up to access The Energy Glossary technical library.</p>
+
+      <div class="auth-message" id="auth-message" hidden></div>
+
+      <form id="signup-form" novalidate>
+          <div class="auth-field">
+            <label for="name">Name</label>
+            <input id="name" name="name" type="text" autocomplete="name" required />
+          </div>
+          <div class="auth-field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div class="auth-field">
+            <label for="password">Create Password</label>
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required />
+          </div>
+          <button class="auth-submit" type="submit" id="signup-submit">Sign Up</button>
+        </form>
+
+        <p class="auth-alt">Already have an account? <a href="login.html">Log in</a></p>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="auth.js"></script>
+    <script>
+      var form = document.getElementById("signup-form");
+    var msg = document.getElementById("auth-message");
+    var submitBtn = document.getElementById("signup-submit");
+
+    function showMessage(text, type) {
+            msg.textContent = text;
+      msg.hidden = false;
+      msg.className = "auth-message " + type;
+    }
+
+    form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+      msg.hidden = true;
+      var name = document.getElementById("name").value.trim();
+      var email = document.getElementById("email").value.trim();
+      var password = document.getElementById("password").value;
+
+      if (!name || !email || password.length < 8) {
+        showMessage("Please fill in all fields — password must be at least 8 characters.", "error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing Up\u2026";
+
+      var result = await window.NovitiumAuth.signUp(name, email, password);
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Sign Up";
+
+      if (result.error) {
+        showMessage(result.error.message || "Something went wrong. Please try again.", "error");
+        return;
+      }
+
+      showMessage("Account created! Check your email to confirm your address before logging in.", "success");
+      form.reset();
+});
+  </script>
+    </body>
+    </html>
+    
