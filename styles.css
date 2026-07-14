@@ -99,6 +99,7 @@ a:hover { color: var(--orange); }
   text-shadow: 0 6px 46px rgba(0,0,0,.55);
 }
 .hero h1 .accent { color: var(--orange); font-style: normal; }
+.hero .powered-by { font-size: clamp(11px, 1.1vw, 13px); color: var(--muted); letter-spacing: .08em; margin: 0 0 14px; font-style: italic; }
 .hero .subtitle { font-size: clamp(13px, 1.5vw, 16px); color: var(--cream); letter-spacing: .08em; margin: 0; }
 
 /* ---------- Search band ---------- */
