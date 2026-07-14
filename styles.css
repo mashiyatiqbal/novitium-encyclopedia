@@ -358,3 +358,23 @@ mark { background: rgba(245,145,42,.32); color: var(--cream); padding: 0 2px; bo
   .footer-inner, .footer-meta { text-align: left; }
   .footer-links { justify-content: flex-start; }
 }
+
+/* ---------- Auth pages (signup / login) ---------- */
+.auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px; background: var(--navy); }
+.auth-card { max-width: 420px; width: 100%; background: var(--navy-2); border: 1px solid var(--navy-line-2); border-radius: var(--radius); padding: 40px 36px; box-shadow: var(--shadow-lg); }
+.auth-card h1 { font-family: var(--head); font-size: 22px; text-transform: uppercase; letter-spacing: .04em; color: var(--cream); margin: 0 0 6px; }
+.auth-card .auth-sub { font-size: 13px; color: var(--muted); margin: 0 0 28px; }
+.auth-field { margin-bottom: 18px; }
+.auth-field label { display: block; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+.auth-field input { width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--navy-line-2); border-radius: 9px; padding: 11px 14px; color: var(--cream); font-family: var(--mono); font-size: 14px; outline: 0; }
+.auth-field input:focus { border-color: var(--orange); }
+.auth-submit { width: 100%; border: 0; background: var(--orange); color: #0a1b30; font-weight: 700; font-family: var(--head); text-transform: uppercase; letter-spacing: .08em; padding: 13px 24px; border-radius: 9px; cursor: pointer; font-size: 13px; margin-top: 6px; }
+.auth-submit:hover { background: var(--orange-2); }
+.auth-submit:disabled { opacity: .6; cursor: not-allowed; }
+.auth-alt { text-align: center; font-size: 13px; color: var(--muted); margin-top: 22px; }
+.auth-alt a { color: var(--orange-2); }
+.auth-message { font-size: 13px; border-radius: 8px; padding: 10px 12px; margin-bottom: 18px; }
+.auth-message.error { background: rgba(219,58,58,.12); border: 1px solid rgba(219,58,58,.35); color: #ff9d9d; }
+.auth-message.success { background: rgba(47,158,94,.12); border: 1px solid rgba(47,158,94,.35); color: #8be3ab; }
+.logout-fab { position: fixed; top: 18px; right: 18px; z-index: 50; background: rgba(10,27,48,.7); border: 1px solid var(--navy-line-2); color: var(--cream); font-family: var(--mono); font-size: 12px; padding: 8px 14px; border-radius: 999px; cursor: pointer; backdrop-filter: blur(6px); }
+.logout-fab:hover { border-color: var(--orange); color: var(--orange-2); }
