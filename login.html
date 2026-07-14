@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log In — The Energy Glossary</title>
+  <link rel="icon" href="assets/novitium-mark.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://hfonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+
+    <div class="auth-page">
+      <div class="auth-card">
+        <h1>Welcome Back</h1>
+        <p class="auth-sub">Log in to access The Energy Glossary technical library.</p>
+
+      <div class="auth-message" id="auth-message" hidden></div>
+
+      <form id="login-form" novalidate>
+          <div class="auth-field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div class="auth-field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <button class="auth-submit" type="submit" id="login-submit">Log In</button>
+        </form>
+
+        <p class="auth-alt">Need an account? <a href="signup.html">Sign up</a></p>
+    </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="auth.js"></script>
+    <script>
+      var form = document.getElementById("login-form");
+    var msg = document.getElementById("auth-message");
+    var submitBtn = document.getElementById("login-submit");
+
+    function showMessage(text, type) {
+            msg.textContent = text;
+      msg.hidden = false;
+      msg.className = "auth-message " + type;
+    }
+
+    (async function () {
+      var session = await window.NovitiumAuth.getSession();
+      if (session) window.location.replace("index.html");
+    })();
+
+    form.addEventListener("submit", async function (e) {
+            e.preventDefault();
+      msg.hidden = true;
+      var email = document.getElementById("email").value.trim();
+      var password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        showMessage("Please enter your email and password.", "error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Logging In\u2026";
+
+      var result = await window.NovitiumAuth.signIn(email, password);
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Log In";
+
+      if (result.error) {
+        showMessage(result.error.message || "Invalid email or password.", "error");
+        return;
+      }
+
+      window.location.replace("index.html");
+});
+  </script>
+    </body>
+    </html>
+    
