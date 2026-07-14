@@ -10,9 +10,14 @@
   <link rel="preconnect" href="https://hfonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,600;1,9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+    <style>html:not(.auth-ready) body { visibility: hidden; }</style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="auth.js"></script>
+  <script src="auth-gate.js"></script>
 </head>
 <body>
-
+<button class="logout-fab" id="logout-btn" type="button">Log out</button>
+  
   <!-- ============ Title header ============ -->
   <section class="hero" id="top">
     <div class="hero-bg" aria-hidden="true"></div>
