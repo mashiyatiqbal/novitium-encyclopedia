@@ -20,8 +20,7 @@
          var res = await client.auth.signUp({
                  email: email,
                  password: password,
-                 options: { data: { full_name: name } },
-         });
+        options: { data: { full_name: name }, emailRedirectTo: "https://mashiyatiqbal.github.io/novitium-encyclopedia/" },         });
          return { user: res.data ? res.data.user : null, error: res.error };
    }
 
