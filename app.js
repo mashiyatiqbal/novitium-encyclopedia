@@ -24,11 +24,6 @@
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   /* ---------------- Build filter UI ---------------- */
-  function counts(field) {
-    const map = {};
-    DOCUMENTS.forEach((d) => { map[d[field]] = (map[d[field]] || 0) + 1; });
-    return map;
-  }
   const FILTERS = {
     category: { set: () => state.cats, label: "Category" },
     type: { set: () => state.types, label: "Type" },
@@ -37,13 +32,12 @@
 
   function buildFilter(containerId, values, set, field) {
     const c = $("#" + containerId);
-    const cnt = counts(field);
     values.forEach((v) => {
       const id = field + "-" + v.replace(/\W+/g, "");
       const label = el("label", "opt");
       label.innerHTML =
         `<input type="checkbox" id="${id}" value="${esc(v)}">` +
-        `<span>${esc(v)}</span><span class="count">${cnt[v] || 0}</span>`;
+        `<span>${esc(v)}</span>`;
       label.querySelector("input").addEventListener("change", (e) => {
         e.target.checked ? set.add(v) : set.delete(v);
         updateFilterCount(field);
@@ -63,6 +57,7 @@
     const badge = $("#count-" + field);
     if (badge) { badge.textContent = n; badge.hidden = n === 0; }
 
+    const anyActive = Object.keys(FILTERS).some((f) => FILTERS[f].set().size > 0);
     $("#clear-filters").hidden = !anyActive;
   }
 
