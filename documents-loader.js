@@ -22,7 +22,7 @@
 (function () {
   "use strict";
 
-  var APP = "app.js?v=3";
+  var APP = "app.js?v=4";
 
   function startApp() {
     var s = document.createElement("script");
