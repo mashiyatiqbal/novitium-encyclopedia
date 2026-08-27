@@ -23,6 +23,43 @@
   };
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+  /* Loose key for comparing label text to the values stored on documents:
+     "White Paper", "white paper" and "Whitepaper" all reduce to "whitepaper",
+     so a filter option can never silently miss its own documents. */
+  const keyOf = (s) => String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const hasKey = (set, v) => {
+    const k = keyOf(v);
+    for (const s of set) if (keyOf(s) === k) return true;
+    return false;
+  };
+  const byKey = (map) => {
+    const m = {};
+    Object.keys(map).forEach((k) => { m[keyOf(k)] = map[k]; });
+    return m;
+  };
+
+  /* Document types we never offer as a filter option. */
+  const HIDDEN_TYPES = new Set(["specsheet", "template"]);
+
+  /* Filter options, built from the documents that actually loaded, using the
+     tidy label from data.js whenever one matches. Preferred order first, then
+     anything the data has that data.js doesn't know about. */
+  function optionList(preferred, field, hidden) {
+    const out = [], seen = new Set();
+    const push = (v) => {
+      const k = keyOf(v);
+      if (!k || seen.has(k) || (hidden && hidden.has(k))) return;
+      seen.add(k);
+      out.push(v);
+    };
+    const inData = new Set(DOCUMENTS.map((d) => keyOf(d[field])));
+    preferred.forEach((v) => { if (inData.has(keyOf(v))) push(v); });
+    const extras = DOCUMENTS.map((d) => d[field]).filter((v) => v && !seen.has(keyOf(v)));
+    extras.sort((a, b) => String(a).localeCompare(String(b)));
+    extras.forEach(push);
+    return out;
+  }
+
   /* ---------------- Build filter UI ---------------- */
   const FILTERS = {
     category: { set: () => state.cats, label: "Category" },
@@ -46,10 +83,9 @@
       c.appendChild(label);
     });
   }
-  buildFilter("filter-category", CATEGORIES, state.cats, "category");
-  buildFilter("filter-type", DOC_TYPES, state.types, "type");
-  const AUTHORS = [...new Set(DOCUMENTS.map(d => d.author))].sort();
-  buildFilter("filter-author", AUTHORS, state.authors, "author");
+  buildFilter("filter-category", optionList(CATEGORIES, "category"), state.cats, "category");
+  buildFilter("filter-type", optionList(DOC_TYPES, "type", HIDDEN_TYPES), state.types, "type");
+  buildFilter("filter-author", optionList([], "author"), state.authors, "author");
 
   /* Update the count badge on a dropdown button + clear-button visibility */
   function updateFilterCount(field) {
@@ -120,6 +156,11 @@
     "Case Study": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
     Video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg>',
   };
+  /* Same loose matching for the card colours and icons, so a document typed
+     "White Paper" still gets the whitepaper icon. */
+  const CAT_COLORS_K = byKey(CAT_COLORS);
+  const TYPE_ICONS_K = byKey(TYPE_ICONS);
+
   function initials(name) {
     return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
   }
@@ -134,9 +175,9 @@
   function filtered() {
     let list = DOCUMENTS.filter((d) =>
       matchesQuery(d, state.query) &&
-      (state.cats.size === 0 || state.cats.has(d.category)) &&
-      (state.types.size === 0 || state.types.has(d.type)) &&
-      (state.authors.size === 0 || state.authors.has(d.author))
+      (state.cats.size === 0 || hasKey(state.cats, d.category)) &&
+      (state.types.size === 0 || hasKey(state.types, d.type)) &&
+      (state.authors.size === 0 || hasKey(state.authors, d.author))
     );
     if (state.sort === "newest") list.sort((a, b) => b.date.localeCompare(a.date));
     if (state.sort === "title") list.sort((a, b) => a.title.localeCompare(b.title));
@@ -175,8 +216,8 @@
     }
 
     list.forEach((d) => {
-      const [g1, g2] = CAT_COLORS[d.category] || ["#1f5fa8", "#13407a"];
-      const icon = TYPE_ICONS[d.type] || TYPE_ICONS.Guide;
+      const [g1, g2] = CAT_COLORS_K[keyOf(d.category)] || ["#1f5fa8", "#13407a"];
+      const icon = TYPE_ICONS_K[keyOf(d.type)] || TYPE_ICONS.Guide;
       const card = el("article", "card");
       card.innerHTML =
         `<div class="card-thumb" style="--g1:${g1};--g2:${g2}">

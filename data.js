@@ -13,7 +13,11 @@ const CATEGORIES = [
   "Grid & Interconnection",
 ];
 
-const DOC_TYPES = ["Guide", "Whitepaper", "Spec Sheet", "Template", "Case Study", "Video"];
+/* Display labels for the Document Type filter. The label shown here is what
+   users see; app.js matches it loosely against the `type` column in Supabase,
+   so "White Paper" below picks up rows stored as "Whitepaper" too.
+   Spec Sheet and Template are deliberately omitted — see HIDDEN_TYPES in app.js. */
+const DOC_TYPES = ["Guide", "White Paper", "Case Study", "Video"];
 
 const LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
