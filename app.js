@@ -357,22 +357,139 @@
     const lc = q.toLowerCase();
     return GLOSSARY.find((g) => lc.includes(g.term.toLowerCase()) || lc.includes(g.full.toLowerCase()));
   }
-  function findDocs(q) {
-    const lc = q.toLowerCase();
-    const words = lc.split(/\s+/).filter((w) => w.length > 2);
-    return DOCUMENTS
-      .map((d) => {
-        const hay = (d.title + " " + d.summary + " " + d.tags.join(" ") + " " + d.category + " " + d.type).toLowerCase();
-        const score = words.reduce((s, w) => s + (hay.includes(w) ? 1 : 0), 0);
-        return { d, score };
-      })
-      .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map((x) => x.d);
+  /* Document search. Delegates to library-index.js, which tokenizes and
+     matches on whole words across weighted fields (title and author weighted
+     highest) after stripping question scaffolding.
+
+     The previous implementation scored raw SUBSTRING hits over
+     title+summary+tags and never indexed the author, so question words did the
+     matching: "how" hit "How Net Metering Works", "has" hit "Purchase
+     Agreement". Asking who wrote what returned unrelated documents, and a
+     different count for every phrasing. */
+  let warnedNoIndex = false;
+  function libraryIndexMissing() {
+    if (!warnedNoIndex) {
+      warnedNoIndex = true;
+      console.error(
+        "[volt] library-index.js did not load — VOLT cannot answer questions " +
+          "about authors, counts or topics. Check that index.html includes " +
+          '<script src="library-index.js"> BEFORE app.js is injected.'
+      );
+    }
+    return true;
+  }
+
+  function findDocs(q, limit) {
+    if (typeof LibraryIndex === "undefined") return libraryIndexMissing() ? [] : [];
+    return LibraryIndex.searchDocs(DOCUMENTS, q, limit || 3);
   }
   function docLink(d) {
-    return `<a href="#" data-doc="${esc(d.title)}">${esc(d.title)}</a> <span style="color:var(--slate)">(${esc(d.type)})</span>`;
+    // Normalize so "Whitepaper" and "White Paper" don't appear side by side.
+    const type = typeof LibraryIndex !== "undefined" ? LibraryIndex.normalizeType(d.type) : d.type;
+    return `<a href="#" data-doc="${esc(d.title)}">${esc(d.title)}</a> <span style="color:var(--slate)">(${esc(type)})</span>`;
+  }
+  function docLines(list) {
+    return list.map((d) => "- " + docLink(d)).join("<br>");
+  }
+  function typeBreakdown(byType) {
+    const keys = Object.keys(byType || {}).sort();
+    if (!keys.length) return "";
+    return keys.map((k) => LibraryIndex.plural(byType[k], k.toLowerCase())).join(", ");
+  }
+
+  /* Renders a structured answer from library-index.js. Counts and
+     attributions come from the data, never from a guess — the same question
+     always produces the same reply. */
+  function renderLibraryAnswer(a) {
+    switch (a.kind) {
+      case "author": {
+        const au = a.author;
+        const breakdown = typeBreakdown(au.byType);
+        return (
+          `<strong>${esc(au.name)}</strong> has ${LibraryIndex.plural(au.total, "document")} ` +
+          `in the library${breakdown ? " — " + esc(breakdown) : ""}:<br><br>` +
+          au.titles
+            .map((t) => "- " + docLink({ title: t.title, type: t.type }))
+            .join("<br>") +
+          "<br><br>Want a summary of any of them?"
+        );
+      }
+      case "authors_multi":
+        return (
+          "I found more than one author in that question:<br><br>" +
+          a.authors
+            .map((x) => `- <strong>${esc(x.name)}</strong> — ${LibraryIndex.plural(x.total, "document")}`)
+            .join("<br>") +
+          "<br><br>Which one did you mean?"
+        );
+      case "author_unknown":
+        return (
+          "I don't see anyone by that name in the library. Here's who is on record:<br><br>" +
+          a.authors
+            .map((x) => `- <strong>${esc(x.name)}</strong> — ${LibraryIndex.plural(x.total, "document")}`)
+            .join("<br>") +
+          "<br><br>Ask me about any of them and I'll list what they've written."
+        );
+      case "authors_list":
+        return (
+          `The library has ${LibraryIndex.plural(a.total, "document")} across ` +
+          `${LibraryIndex.plural(a.authors.length, "author")}:<br><br>` +
+          a.authors
+            .map((x) => `- <strong>${esc(x.name)}</strong> — ${LibraryIndex.plural(x.total, "document")}`)
+            .join("<br>")
+        );
+      case "doc_author":
+        return (
+          `<strong>${esc(a.doc.title)}</strong> is by <strong>${esc(a.doc.author)}</strong>` +
+          `${a.doc.date ? " (" + esc(fmtDate(a.doc.date)) + ")" : ""}.<br><br>` +
+          docLink(a.doc) +
+          "<br><br>Want to know what else they've written?"
+        );
+      case "count": {
+        if (!a.total) {
+          return (
+            `I don't have anything${a.label ? " under " + esc(a.label) : ""} in the library yet. ` +
+            "Try a broader topic and I'll show you what's there."
+          );
+        }
+        const scope = a.label ? " under " + esc(a.label) : " in the library";
+        const breakdown = a.byType ? typeBreakdown(a.byType) : "";
+        return (
+          `There ${a.total === 1 ? "is" : "are"} <strong>${LibraryIndex.plural(a.total, "document")}</strong>` +
+          `${scope}${breakdown && !a.label ? " — " + esc(breakdown) : ""}.<br><br>` +
+          docLines(a.docs) +
+          (a.total > a.docs.length ? `<br><br>…and ${a.total - a.docs.length} more.` : "")
+        );
+      }
+      case "newest":
+        return (
+          "The most recent additions:<br><br>" +
+          a.docs
+            .map((d) => "- " + docLink(d) + (d.date ? ` <span style="color:var(--slate)">${esc(fmtDate(d.date))}</span>` : ""))
+            .join("<br>")
+        );
+      case "browse":
+        if (!a.total) {
+          return `I don't have any ${esc(a.label)} in the library yet. Want me to show you a related topic?`;
+        }
+        return (
+          `${LibraryIndex.plural(a.total, "document")} under <strong>${esc(a.label)}</strong>:<br><br>` +
+          docLines(a.docs) +
+          (a.total > a.docs.length ? `<br><br>…and ${a.total - a.docs.length} more.` : "")
+        );
+      case "site_help":
+        return (
+          "Here's how to get around:<br>" +
+          "- Use the <strong>search bar</strong> at the top — it matches titles, summaries and tags.<br>" +
+          "- In <strong>Filter &amp; Search Documents</strong> there are three dropdowns: " +
+          "<strong>Topic</strong>, <strong>Document Type</strong> and <strong>Author</strong>. " +
+          "You can pick several values in each, and your choices appear as chips you can remove.<br>" +
+          "- <strong>Clear filters</strong> resets everything, and the sort control sits next to the result count.<br><br>" +
+          "Tell me what you're after and I'll tell you exactly what's in the library."
+        );
+      default:
+        return null;
+    }
   }
 
   /* ---- conversation history sent to the API ---- */
@@ -495,11 +612,27 @@
       return;
     }
 
-    // how to search / site help
-    if (/(how.*(search|find|use|filter|sort|navigate)|search bar|filter|sort by)/.test(q)) {
-      botSay("To find resources:<br>- Use the <strong>search bar</strong> at the top to search by keyword.<br>- Use the <strong>Category, Type, and Level filters</strong> on the toolbar to narrow results.<br>- Click any popular-topic shortcut to instantly filter.<br><br>Want me to run a search for you? Just tell me the topic.");
-      setChips(["Show me financing docs", "What is a PPA?", "Find storage resources"]);
-      return;
+    /* ---- structured questions about the library ----
+       Who wrote what, how many, what's newest, what's in a topic, how the
+       site works. All answered from DOCUMENTS by library-index.js, so the
+       same question always gets the same answer. Anything it can't classify
+       returns null and falls through to the knowledge base below. */
+    if (typeof LibraryIndex === "undefined") {
+      libraryIndexMissing();
+    } else {
+      const structured = LibraryIndex.answer(raw, DOCUMENTS);
+      if (structured) {
+        const html = renderLibraryAnswer(structured);
+        if (html) {
+          botSay(html);
+          if (structured.kind === "author" || structured.kind === "author_unknown") {
+            setChips(["Who are the authors?", "What's new in the library?", "How do I filter?"]);
+          } else if (structured.kind === "site_help") {
+            setChips(["Who are the authors?", "What's new?", "How many documents are there?"]);
+          }
+          return;
+        }
+      }
     }
 
     // glossary listing
@@ -640,12 +773,15 @@
       return;
     }
 
-    // document search
-    const docs = findDocs(q);
+    // document search — chat only, the page is left exactly as the visitor
+    // arranged it. The links below open documents on click.
+    const docs = findDocs(raw);
     if (docs.length) {
-      botSay("Here's what I found in the library:<br><br>" + docs.map(docLink).join("<br>") + "<br><br>Want me to filter the page to these results?");
-      searchInput.value = raw;
-      doSearch(raw);
+      botSay(
+        "Here's what I found in the library:<br><br>" +
+          docLines(docs) +
+          "<br><br>Click any of them to open it, or ask me about a topic and I'll go deeper."
+      );
       return;
     }
 
