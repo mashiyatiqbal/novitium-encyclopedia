@@ -7,6 +7,12 @@ const path = require("path");
 const express = require("express");
 const Anthropic = require("@anthropic-ai/sdk");
 const { buildSystemPrompt } = require("./knowledge");
+const {
+  getCatalogue,
+  invalidate,
+  matchAuthors,
+  SERVER_READ_ENABLED,
+} = require("./catalogue");
 
 const PORT = process.env.PORT || 3000;
 const CHAT_MODEL = process.env.CHAT_MODEL || "claude-3-5-sonnet-latest";
@@ -19,11 +25,16 @@ if (!process.env.ANTHROPIC_API_KEY) {
   );
 }
 
-const SYSTEM_PROMPT = buildSystemPrompt();
+// The system prompt is now built per request from the LIVE catalogue
+// (catalogue.js caches it, so this is a map lookup on the hot path). Building
+// it once at boot meant VOLT described a stale, author-less document list for
+// as long as the process stayed up.
 const app = express();
 const client = new Anthropic();
 
-app.use(express.json({ limit: "256kb" }));
+// Headroom for the catalogue snapshot the browser posts alongside each message
+// (capped server-side at CATALOGUE_MAX_DOCS rows regardless).
+app.use(express.json({ limit: "1mb" }));
 
 // Allow the GitHub Pages front-end to call this API
 const ALLOWED_ORIGINS = [
@@ -93,6 +104,39 @@ app.post("/api/chat", async (req, res) => {
 
   console.log("POST /api/chat model:", CHAT_MODEL, "msgs:", messages.length);
 
+  // Live catalogue -> system prompt for THIS request.
+  //
+  // If SUPABASE_SERVICE_ROLE_KEY is configured the server reads Supabase
+  // itself. If not, we index the snapshot the browser posted — it already
+  // read the table under the visitor's own session to render the cards.
+  // Either way the counting happens here, in code.
+  const catalogue = await getCatalogue({ clientRows: req.body.catalogue });
+  const systemPrompt = buildSystemPrompt(catalogue);
+
+  console.log(
+    `[volt] catalogue: ${catalogue.docs.length} docs / ${catalogue.authors.length} authors ` +
+      `(source: ${catalogue.source}, version: ${catalogue.version})`
+  );
+
+  // Belt and braces: if the visitor's latest question names someone who is in
+  // the author index, restate that person's exact record as a system fact for
+  // this turn. Counting questions then have the answer sitting right next to
+  // the question instead of buried in a long list.
+  const lastUser = [...messages].reverse().find((m) => m.role === "user");
+  const named = lastUser ? matchAuthors(catalogue.authors || [], lastUser.content) : [];
+  const factBlock = named.length
+    ? "AUTHORITATIVE RECORD for the name(s) in the visitor's latest message. " +
+      "Use these exact counts and titles verbatim; do not add, drop, or re-count.\n" +
+      named
+        .map(
+          (a) =>
+            `${a.name}: ${a.total} document${a.total === 1 ? "" : "s"} total.\n` +
+            a.titles.map((t) => `  - "${t.title}" (${t.type})`).join("\n")
+        )
+        .join("\n") +
+      "\nNo other document in the library is written by these people."
+    : null;
+
   // Server-Sent Events
   const origin = req.headers.origin || "";
   res.writeHead(200, {
@@ -117,8 +161,15 @@ app.post("/api/chat", async (req, res) => {
       {
         model: CHAT_MODEL,
         max_tokens: 2048,
+        // Factual lookups should not vary run to run. Sampling at the default
+        // temperature is a second reason the same question got two different
+        // answers.
+        temperature: 0,
         system: [
-          { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+          // Cached: this block only changes when the catalogue changes.
+          { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
+          // Not cached: specific to this turn.
+          ...(factBlock ? [{ type: "text", text: factBlock }] : []),
         ],
         messages,
       },
@@ -145,9 +196,56 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-app.get("/api/health", (_req, res) =>
-  res.json({ ok: true, model: CHAT_MODEL, keyConfigured: !!process.env.ANTHROPIC_API_KEY })
-);
+app.get("/api/health", async (_req, res) => {
+  const cat = await getCatalogue();
+  res.json({
+    ok: true,
+    model: CHAT_MODEL,
+    keyConfigured: !!process.env.ANTHROPIC_API_KEY,
+    catalogue: {
+      // Note: this reflects the SERVER-side view only. With no service-role
+      // key configured, VOLT still works — it indexes the snapshot each
+      // browser posts — but there is nothing to report here.
+      serverReadEnabled: SERVER_READ_ENABLED,
+      available: cat.available,
+      source: cat.source,
+      documents: cat.docs.length,
+      authors: cat.authors.length,
+      version: cat.version,
+      fetchedAt: cat.fetchedAt,
+      stale: !!cat.stale,
+      error: cat.error || null,
+    },
+  });
+});
+
+// What VOLT believes about the library, for debugging an answer.
+// POST a {catalogue:[...]} body to inspect what a given browser snapshot
+// would produce; GET shows the server-side view.
+app.all("/api/catalogue", async (req, res) => {
+  const cat = await getCatalogue({ clientRows: req.body && req.body.catalogue });
+  res.json({
+    available: cat.available,
+    source: cat.source,
+    version: cat.version,
+    fetchedAt: cat.fetchedAt,
+    total: cat.docs.length,
+    authors: (cat.authors || []).map((a) => ({
+      name: a.name,
+      total: a.total,
+      byType: a.byType,
+      titles: a.titles.map((t) => t.title),
+    })),
+  });
+});
+
+// Call after publishing or re-attributing a document so VOLT picks it up
+// without waiting out the cache TTL.
+app.post("/api/catalogue/refresh", async (_req, res) => {
+  invalidate();
+  const cat = await getCatalogue();
+  res.json({ ok: cat.available, documents: cat.docs.length, authors: cat.authors.length });
+});
 
 app.listen(PORT, () => {
   console.log(`Novitium Encyclopedia running at http://localhost:${PORT}`);
