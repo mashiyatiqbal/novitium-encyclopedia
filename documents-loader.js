@@ -22,12 +22,22 @@
 (function () {
   "use strict";
 
-  var APP = "app.js?v=6"; // bumped: app.js now posts the catalogue to VOLT
+  var APP = "app.js?v=7"; // bumped: catalogue snapshot + library-index routing
+  var INDEX = "library-index.js?v=1"; // must finish loading before app.js runs
 
+  /* Load library-index.js, then app.js. Ordering is guaranteed here rather
+     than by the order of <script> tags in index.html, so adding the feature
+     never depends on remembering to edit two files. If the index fails to
+     load, app.js still starts and logs an explicit error. */
   function startApp() {
-    var s = document.createElement("script");
-    s.src = APP;
-    document.body.appendChild(s);
+    var idx = document.createElement("script");
+    idx.src = INDEX;
+    idx.onload = idx.onerror = function () {
+      var s = document.createElement("script");
+      s.src = APP;
+      document.body.appendChild(s);
+    };
+    document.body.appendChild(idx);
   }
 
   /* Postgres columns -> the field names the cards already render. */
