@@ -383,13 +383,36 @@
     return esc(text).replace(/\n{2,}/g, "<br><br>").replace(/\n/g, "<br>");
   }
 
+  /* A compact copy of the live catalogue for VOLT.
+
+     documents-loader.js has already read the `documents` table under this
+     visitor's own authenticated session — that's what rendered the cards. We
+     hand the server the result so it can answer "who wrote what" and "how
+     many" from real data instead of guessing. The server re-sanitizes and
+     caps this, and prefers its own Supabase read when one is configured. */
+  function catalogueSnapshot() {
+    if (typeof DOCUMENTS === "undefined" || !Array.isArray(DOCUMENTS)) return [];
+    return DOCUMENTS.slice(0, 500).map(function (d) {
+      return {
+        title: d.title,
+        author: d.author,
+        type: d.type,
+        category: d.category,
+        level: d.level,
+        date: d.date,
+        summary: d.summary,
+        tags: Array.isArray(d.tags) ? d.tags.slice(0, 12) : [],
+      };
+    });
+  }
+
   /* Stream a reply from the VOLT backend (SSE). Resolves with the full text,
      or throws if the backend is unreachable / not configured. */
   async function streamChat(messages, onDelta) {
     const resp = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, catalogue: catalogueSnapshot() }),
     });
     if (!resp.ok || !resp.body) throw new Error("backend " + resp.status);
 

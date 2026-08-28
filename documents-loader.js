@@ -22,7 +22,7 @@
 (function () {
   "use strict";
 
-  var APP = "app.js?v=5";
+  var APP = "app.js?v=6"; // bumped: app.js now posts the catalogue to VOLT
 
   function startApp() {
     var s = document.createElement("script");
