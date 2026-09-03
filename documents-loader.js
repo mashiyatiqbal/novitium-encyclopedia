@@ -22,7 +22,7 @@
 (function () {
   "use strict";
 
-  var APP = "app.js?v=7"; // bumped: catalogue snapshot + library-index routing
+  var APP = "app.js?v=8"; // bumped: real document cover thumbnails
   var INDEX = "library-index.js?v=1"; // must finish loading before app.js runs
 
   /* Load library-index.js, then app.js. Ordering is guaranteed here rather
@@ -40,10 +40,32 @@
     document.body.appendChild(idx);
   }
 
+  /* Where the rendered page-1 images live. This bucket is public on purpose:
+     a cover is a picture of a title page, not the document, so the cards can
+     use plain <img> tags that the browser and CDN cache. The documents bucket
+     itself stays private with 5-minute signed URLs (see the click handler at
+     the bottom of this file). */
+  var COVER_BUCKET_URL =
+    "https://mizlazbsufftjtlvdrjv.supabase.co/storage/v1/object/public/covers/";
+
+  /* cover_updated_at is appended as ?v= so that re-uploading a document and
+     re-rendering its cover to the SAME path still busts the year-long
+     immutable cache we set on the object. */
+  function coverUrl(r) {
+    if (!r.cover_path) return null;
+    var base =
+      COVER_BUCKET_URL +
+      String(r.cover_path).split("/").map(encodeURIComponent).join("/");
+    return r.cover_updated_at
+      ? base + "?v=" + encodeURIComponent(r.cover_updated_at)
+      : base;
+  }
+
   /* Postgres columns -> the field names the cards already render. */
   function mapRow(r) {
     return {
       title:    r.title || "Untitled",
+      cover:    coverUrl(r),
       summary:  r.summary || "",
       category: r.category,
       type:     r.type,

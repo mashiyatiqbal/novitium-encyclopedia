@@ -219,8 +219,24 @@
       const [g1, g2] = CAT_COLORS_K[keyOf(d.category)] || ["#1f5fa8", "#13407a"];
       const icon = TYPE_ICONS_K[keyOf(d.type)] || TYPE_ICONS.Guide;
       const card = el("article", "card");
+
+      /* Two thumbnails, one markup path. When the row has a rendered cover
+         page we lay the image over the gradient and mark the block
+         .has-cover, which hides the fake page-lines graphic in CSS. With no
+         cover — an external video, an unsupported file type, or a document
+         whose cover job hasn't run yet — the original generated placeholder
+         renders unchanged, so the grid never shows a hole.
+
+         onerror strips .has-cover, so a deleted or still-uploading cover
+         falls back to the placeholder instead of leaving a broken image. */
+      const coverImg = d.cover
+        ? `<img class="thumb-img" src="${esc(d.cover)}" alt="" loading="lazy" decoding="async"
+                onerror="this.closest('.card-thumb').classList.remove('has-cover');this.remove();">`
+        : "";
+
       card.innerHTML =
-        `<div class="card-thumb" style="--g1:${g1};--g2:${g2}">
+        `<div class="card-thumb${d.cover ? " has-cover" : ""}" style="--g1:${g1};--g2:${g2}">
+           ${coverImg}
            <span class="thumb-type">${esc(d.type)}</span>
            <span class="thumb-icon">${icon}</span>
            <span class="thumb-page"><i></i><i></i><i></i><i></i><i></i></span>

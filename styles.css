@@ -217,7 +217,11 @@ a:hover { color: var(--orange); }
 
 /* Preview / thumbnail */
 .card-thumb {
-  position: relative; height: 148px; padding: 16px;
+  /* 176px rather than the original 148px: a cover page is portrait, so the
+     crop needs a little more height before the title under the logo makes it
+     into frame. Every card uses the same height whether it has a real cover
+     or the generated placeholder, so the grid stays on one baseline. */
+  position: relative; height: 176px; padding: 16px;
   background: linear-gradient(135deg, var(--g1, #1f5fa8), var(--g2, #0a1b30));
   display: flex; align-items: flex-end; overflow: hidden;
 }
@@ -225,6 +229,52 @@ a:hover { color: var(--orange); }
   content: ""; position: absolute; inset: 0;
   background-image: radial-gradient(rgba(255,255,255,.16) 1px, transparent 1.4px);
   background-size: 15px 15px; opacity: .45;
+}
+
+/* ---------- Real cover page (rendered page 1 of the document) ---------- */
+.thumb-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  /* Anchored to the top of the page: the logo and title live there, and the
+     body copy that gets cropped away is the part nobody can read at this
+     size anyway. */
+  object-fit: cover; object-position: center top;
+  /* The image fades in only once it has decoded, so a slow cover never
+     flashes a half-drawn page over the gradient. */
+  animation: cover-in .25s ease both;
+}
+@keyframes cover-in { from { opacity: 0 } to { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .thumb-img { animation: none } }
+
+/* With a real cover the decorative layers would fight it, so they go away:
+   the dot pattern, the oversized type icon, and the fake page-lines sheet. */
+.card-thumb.has-cover::before,
+.card-thumb.has-cover .thumb-icon,
+.card-thumb.has-cover .thumb-page { display: none; }
+
+/* Cover pages are usually near-white, which would leave the white chips
+   illegible and blend the thumbnail into the card. This scrim darkens the
+   top and bottom edges only, where the chips sit. */
+.card-thumb.has-cover::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    /* Top: light touch. The type chip carries its own background, so this
+       only needs to stop a white page from glaring against the card edge. */
+    linear-gradient(to bottom, rgba(4,12,24,.34) 0%, rgba(4,12,24,0) 26%),
+    /* Bottom: heavy. The category chip sits here, and on a portrait cover
+       the crop leaves the document's own subtitle running underneath it —
+       two competing texts. Fading to near-solid reads as a deliberate
+       caption band instead of an overlap. */
+    linear-gradient(to top, rgba(4,12,24,.96) 0%, rgba(4,12,24,.88) 13%,
+                            rgba(4,12,24,.34) 24%, rgba(4,12,24,0) 34%);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.06);
+}
+/* Over a photographic background the chips need a firmer plate than the
+   translucent one that works on the flat gradient placeholder. */
+.card-thumb.has-cover .thumb-type { background: rgba(4,12,24,.72); }
+.card-thumb.has-cover .thumb-cat {
+  background: rgba(4,12,24,.5);
+  border-color: rgba(255,255,255,.34);
+  backdrop-filter: blur(2px);
 }
 .thumb-icon { position: absolute; top: -14px; right: -10px; color: rgba(255,255,255,.18); }
 .thumb-icon svg { width: 130px; height: 130px; }
