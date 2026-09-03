@@ -251,30 +251,40 @@ a:hover { color: var(--orange); }
 .card-thumb.has-cover .thumb-icon,
 .card-thumb.has-cover .thumb-page { display: none; }
 
-/* Cover pages are usually near-white, which would leave the white chips
-   illegible and blend the thumbnail into the card. This scrim darkens the
-   top and bottom edges only, where the chips sit. */
+/* Both chips ride along the TOP edge on a cover card, and the bottom is left
+   almost clear.
+
+   The placeholder puts the category chip bottom-left, which is fine over a
+   flat gradient. Over a real cover it collides with the document's own
+   words: a title page carries its running head at the very top and its
+   title roughly a third of the way down — which, cropped to this height, is
+   exactly where a bottom-left chip lands. Two titles fighting in one box.
+   Moving the chip up pairs it with the type chip in the one band that is
+   reliably empty on a title page, and lets the cover's own title read
+   cleanly underneath. */
 .card-thumb.has-cover::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
   background:
-    /* Top: light touch. The type chip carries its own background, so this
-       only needs to stop a white page from glaring against the card edge. */
-    linear-gradient(to bottom, rgba(4,12,24,.34) 0%, rgba(4,12,24,0) 26%),
-    /* Bottom: heavy. The category chip sits here, and on a portrait cover
-       the crop leaves the document's own subtitle running underneath it —
-       two competing texts. Fading to near-solid reads as a deliberate
-       caption band instead of an overlap. */
-    linear-gradient(to top, rgba(4,12,24,.96) 0%, rgba(4,12,24,.88) 13%,
-                            rgba(4,12,24,.34) 24%, rgba(4,12,24,0) 34%);
+    /* Top: enough to seat both chips on a near-white page. */
+    linear-gradient(to bottom, rgba(4,12,24,.58) 0%, rgba(4,12,24,.12) 22%,
+                               rgba(4,12,24,0) 34%),
+    /* Bottom: a whisper, purely to stop a white page cutting hard against
+       the card body below it. */
+    linear-gradient(to top, rgba(4,12,24,.3) 0%, rgba(4,12,24,0) 12%);
   box-shadow: inset 0 -1px 0 rgba(255,255,255,.06);
 }
 /* Over a photographic background the chips need a firmer plate than the
    translucent one that works on the flat gradient placeholder. */
-.card-thumb.has-cover .thumb-type { background: rgba(4,12,24,.72); }
+.card-thumb.has-cover .thumb-type { background: rgba(4,12,24,.78); }
 .card-thumb.has-cover .thumb-cat {
-  background: rgba(4,12,24,.5);
-  border-color: rgba(255,255,255,.34);
+  position: absolute; top: 15px; right: 16px; bottom: auto; left: auto;
+  background: rgba(4,12,24,.7);
+  border-color: rgba(255,255,255,.3);
   backdrop-filter: blur(2px);
+  /* "Grid & Interconnection" next to "WHITE PAPER" is a squeeze on the
+     narrowest card, so the category truncates rather than wrapping into
+     the artwork or shoving the type chip off the edge. */
+  max-width: 56%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .thumb-icon { position: absolute; top: -14px; right: -10px; color: rgba(255,255,255,.18); }
 .thumb-icon svg { width: 130px; height: 130px; }
