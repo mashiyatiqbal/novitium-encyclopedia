@@ -251,12 +251,16 @@ a:hover { color: var(--orange); }
 .thumb-blur {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: center;
-  filter: blur(26px) saturate(1.2);
-  /* Blended into the category gradient rather than laid flatly on top of
-     it: soft-light keeps the navy hue and takes only the cover's light and
-     shade, so the block picks up the document's own colouring instead of
-     washing out to grey the way a mostly-white page otherwise would. */
-  mix-blend-mode: soft-light; opacity: .9;
+  /* Dimmed hard. A title page is mostly white, and at full strength the
+     backdrop turns into a bright panel that fights both the page sitting on
+     it and the dark grid around it. Checked against the live library:
+     soft-light blending was tried first and pushed the lighter category
+     colours (Policy & Incentives is a pale purple) up into lavender, so the
+     backdrop is laid on normally and darkened instead. */
+  filter: blur(26px) saturate(1.15) brightness(.42);
+  /* Just short of opaque, so a little of the category gradient still reads
+     through and a white-paged document keeps a hint of its topic colour. */
+  opacity: .82;
   /* Scaled up so the blur radius never drags the block's own edges inward
      and leaves a pale halo around the frame. */
   transform: scale(1.25);
