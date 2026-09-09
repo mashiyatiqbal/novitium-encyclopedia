@@ -229,8 +229,10 @@
 
          onerror strips .has-cover, so a deleted or still-uploading cover
          falls back to the placeholder instead of leaving a broken image. */
-      const coverImg = d.cover
-        ? `<img class="thumb-img" src="${esc(d.cover)}" alt="" loading="lazy" decoding="async"
+            const coverImg = d.cover
+        ? `<img class="thumb-blur" src="${esc(d.cover)}" alt="" aria-hidden="true"
+                loading="lazy" decoding="async" onerror="this.remove();">
+           <img class="thumb-img" src="${esc(d.cover)}" alt="" loading="lazy" decoding="async"
                 onerror="this.closest('.card-thumb').classList.remove('has-cover');this.remove();">`
         : "";
 
