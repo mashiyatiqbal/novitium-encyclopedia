@@ -22,7 +22,7 @@
 (function () {
   "use strict";
 
-  var APP = "app.js?v=8"; // bumped: real document cover thumbnails
+      var APP = "app.js?v=9"; // bumped: full uncropped cover thumbnails
   var INDEX = "library-index.js?v=1"; // must finish loading before app.js runs
 
   /* Load library-index.js, then app.js. Ordering is guaranteed here rather
