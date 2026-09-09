@@ -217,11 +217,11 @@ a:hover { color: var(--orange); }
 
 /* Preview / thumbnail */
 .card-thumb {
-  /* 176px rather than the original 148px: a cover page is portrait, so the
-     crop needs a little more height before the title under the logo makes it
-     into frame. Every card uses the same height whether it has a real cover
-     or the generated placeholder, so the grid stays on one baseline. */
-  position: relative; height: 176px; padding: 16px;
+  /* 260px: tall enough for an entire portrait title page to be shown whole
+     rather than cropped to a band. Every card uses the same height whether
+     it has a real cover or the generated placeholder, so the grid stays on
+     one baseline and a placeholder never leaves a gap beside a cover. */
+  position: relative; height: 260px; padding: 16px;
   background: linear-gradient(135deg, var(--g1, #1f5fa8), var(--g2, #0a1b30));
   display: flex; align-items: flex-end; overflow: hidden;
 }
@@ -232,18 +232,62 @@ a:hover { color: var(--orange); }
 }
 
 /* ---------- Real cover page (rendered page 1 of the document) ---------- */
-.thumb-img {
+
+/* A cover card is taller than a placeholder card, because the whole title
+   page has to fit inside it rather than being cropped to a band. The extra
+   height buys back most of the legibility that switching from a crop to a
+   fit would otherwise cost. */
+/* Padding is dropped on a cover card because the fitted page positions
+   itself against the block's edges. The category gradient underneath is
+   kept: most title pages are mostly white, and a blurred white page on its
+   own washes out to flat grey against the navy grid. */
+.card-thumb.has-cover { padding: 0; }
+
+/* Backdrop: the same cover, blown up, blurred and dimmed, filling the
+   whole block. It gives the fitted page something to sit on that is keyed
+   to the document's own colours, so the leftover space either side reads
+   as depth rather than as empty letterbox bars. Decorative only — the
+   real cover carries the alt text (empty, since the title is right below). */
+.thumb-blur {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  /* Anchored to the top of the page: the logo and title live there, and the
-     body copy that gets cropped away is the part nobody can read at this
-     size anyway. */
-  object-fit: cover; object-position: center top;
+  object-fit: cover; object-position: center;
+  filter: blur(26px) saturate(1.2);
+  /* Blended into the category gradient rather than laid flatly on top of
+     it: soft-light keeps the navy hue and takes only the cover's light and
+     shade, so the block picks up the document's own colouring instead of
+     washing out to grey the way a mostly-white page otherwise would. */
+  mix-blend-mode: soft-light; opacity: .9;
+  /* Scaled up so the blur radius never drags the block's own edges inward
+     and leaves a pale halo around the frame. */
+  transform: scale(1.25);
+  z-index: 0;
+  animation: cover-in .25s ease both;
+}
+
+/* The cover itself, fitted whole inside the block: nothing is cropped.
+   Inset rather than full-bleed — the 40px at the top is the band the two
+   chips sit in, so they never land on the document's own words, and the
+   14px elsewhere keeps the page from touching the card edge. */
+.thumb-img {
+  position: absolute; top: 40px; left: 14px;
+  /* Sized explicitly rather than by the four insets: an absolutely
+     positioned <img> with auto width falls back to its INTRINSIC size and
+     spills out of the box, which puts the crop straight back. */
+  width: calc(100% - 28px); height: calc(100% - 54px); max-width: none;
+  object-fit: contain; object-position: center;
+  z-index: 1;
+  /* Shadow follows the page silhouette (drop-shadow, not box-shadow), so a
+     portrait PDF and a landscape slide both look like a sheet lying on the
+     backdrop. */
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,.55));
   /* The image fades in only once it has decoded, so a slow cover never
      flashes a half-drawn page over the gradient. */
   animation: cover-in .25s ease both;
 }
 @keyframes cover-in { from { opacity: 0 } to { opacity: 1 } }
-@media (prefers-reduced-motion: reduce) { .thumb-img { animation: none } }
+@media (prefers-reduced-motion: reduce) {
+  .thumb-img, .thumb-blur { animation: none }
+}
 
 /* With a real cover the decorative layers would fight it, so they go away:
    the dot pattern, the oversized type icon, and the fake page-lines sheet. */
@@ -251,26 +295,20 @@ a:hover { color: var(--orange); }
 .card-thumb.has-cover .thumb-icon,
 .card-thumb.has-cover .thumb-page { display: none; }
 
-/* Both chips ride along the TOP edge on a cover card, and the bottom is left
-   almost clear.
-
-   The placeholder puts the category chip bottom-left, which is fine over a
-   flat gradient. Over a real cover it collides with the document's own
-   words: a title page carries its running head at the very top and its
-   title roughly a third of the way down — which, cropped to this height, is
-   exactly where a bottom-left chip lands. Two titles fighting in one box.
-   Moving the chip up pairs it with the type chip in the one band that is
-   reliably empty on a title page, and lets the cover's own title read
-   cleanly underneath. */
+/* Both chips ride along the TOP edge on a cover card, in the 40px band the
+   fitted page is inset from. They never touch the document's own words,
+   which is what the old bottom-left category chip used to do: a title page
+   carries its title roughly a third of the way down, and that is exactly
+   where a bottom chip landed. Keeping both chips in the inset band lets the
+   cover's own title read cleanly underneath. */
 .card-thumb.has-cover::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
+  /* Painted over the blurred backdrop but under the page itself (the page
+     carries z-index 1), so it darkens the chip band without hazing the
+     cover. Much lighter than before — the backdrop is already dim. */
   background:
-    /* Top: enough to seat both chips on a near-white page. */
-    linear-gradient(to bottom, rgba(4,12,24,.58) 0%, rgba(4,12,24,.12) 22%,
-                               rgba(4,12,24,0) 34%),
-    /* Bottom: a whisper, purely to stop a white page cutting hard against
-       the card body below it. */
-    linear-gradient(to top, rgba(4,12,24,.3) 0%, rgba(4,12,24,0) 12%);
+    linear-gradient(to bottom, rgba(4,12,24,.42) 0%, rgba(4,12,24,.10) 20%,
+                               rgba(4,12,24,0) 30%);
   box-shadow: inset 0 -1px 0 rgba(255,255,255,.06);
 }
 /* Over a photographic background the chips need a firmer plate than the
@@ -286,10 +324,12 @@ a:hover { color: var(--orange); }
      the artwork or shoving the type chip off the edge. */
   max-width: 56%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.thumb-icon { position: absolute; top: -14px; right: -10px; color: rgba(255,255,255,.18); }
-.thumb-icon svg { width: 130px; height: 130px; }
+.thumb-icon { position: absolute; top: -18px; right: -12px; color: rgba(255,255,255,.18); }
+/* Scaled with the taller block so the placeholder does not look sparse
+   next to a card carrying a real cover page. */
+.thumb-icon svg { width: 152px; height: 152px; }
 .thumb-page {
-  position: absolute; right: 18px; bottom: -22px; width: 92px; height: 112px; border-radius: 9px 9px 0 0;
+  position: absolute; right: 18px; bottom: -22px; width: 108px; height: 132px; border-radius: 9px 9px 0 0;
   background: rgba(255,255,255,.92); box-shadow: 0 12px 26px rgba(0,0,0,.4); padding: 12px 12px 0; transform: rotate(3deg);
 }
 .thumb-page i { display: block; height: 5px; border-radius: 3px; background: #c9d2df; margin-bottom: 6px; }
@@ -415,6 +455,10 @@ mark { background: rgba(245,145,42,.32); color: var(--cream); padding: 0 2px; bo
   .toolbar-right { justify-content: space-between; }
   .hero { min-height: 520px; }
   .grid { grid-template-columns: 1fr; }
+  /* One card per row means a much wider block, and a fitted portrait page is
+     sized by height, not width — so the block grows to keep the cover from
+     shrinking into a stamp between two wide bands of backdrop. */
+  .card-thumb { height: 340px; }
   .footer-inner, .footer-meta { text-align: left; }
   .footer-links { justify-content: flex-start; }
 }
